@@ -3,6 +3,7 @@ package it.polito.tdp.food;
 import java.net.URL;
 import java.util.ResourceBundle;
 
+import it.polito.tdp.food.model.Food;
 import it.polito.tdp.food.model.Model;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -39,7 +40,7 @@ public class FXMLController {
     private Button btnSimula;
 
     @FXML
-    private ComboBox<?> boxFood;
+    private ComboBox<Food> boxFood;
 
     @FXML
     private TextArea txtResult;
@@ -47,15 +48,52 @@ public class FXMLController {
     @FXML
     void doCreaGrafo(ActionEvent event) {
 
-    }
+		txtResult.clear();
+
+		try {
+    	int numeroPorzioni=Integer.parseInt(this.txtPorzioni.getText());
+    	this.model.creaGrafo(numeroPorzioni);
+ 	     txtResult.appendText("Grafo creato con "+this.model.getNumeroVertici()+" vertici e con "+this.model.getNumeroArchi()+" archi \n");
+ 	     this.boxFood.getItems().addAll(this.model.getTendina());
+		} catch (NumberFormatException e) {
+			txtResult.setText("Inserire numero porzioni nel formato corretto.");
+		} catch (RuntimeException e) {
+			txtResult.setText("ERRORE DI CONNESSIONE AL DATABASE!");
+		}
+}
 
     @FXML
     void doGrassi(ActionEvent event) {
-
+              if(this.boxFood.getValue()==null) {
+            	  txtResult.setText("SELEZIONA UN CIBO");
+              }else {
+            	  txtResult.setText(this.model.getMigliori(this.boxFood.getValue()).toString());
+ 
+              }
     }
 
     @FXML
     void doSimula(ActionEvent event) {
+    	txtResult.clear();
+
+		try {
+    	int nStazioni=Integer.parseInt(this.txtK.getText());
+    	  if(this.boxFood.getValue()==null) {
+        	  txtResult.setText("SELEZIONA UN CIBO");
+          }else {
+        	
+        	  this.model.simulazione(nStazioni, this.boxFood.getValue());
+  			txtResult.appendText("Preparati "+this.model.getCibiPreparati()+" cibi in "+this.model.getTempoTotale()+" secondi");
+
+
+          }
+    	
+		
+		} catch (NumberFormatException e) {
+			txtResult.setText("Inserire numero porzioni nel formato corretto.");
+		} catch (RuntimeException e) {
+			txtResult.setText("ERRORE DI CONNESSIONE AL DATABASE!");
+		}
 
     }
 

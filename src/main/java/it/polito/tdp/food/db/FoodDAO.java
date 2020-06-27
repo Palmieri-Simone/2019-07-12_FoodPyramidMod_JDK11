@@ -6,13 +6,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+import it.polito.tdp.food.model.Arco;
 import it.polito.tdp.food.model.Condiment;
 import it.polito.tdp.food.model.Food;
 import it.polito.tdp.food.model.Portion;
 
 public class FoodDAO {
-	public List<Food> listAllFoods(){
+	public List<Food> listAllFoods(Map<Integer,Food> idFoods) {
 		String sql = "SELECT * FROM food" ;
 		try {
 			Connection conn = DBConnect.getConnection() ;
@@ -25,9 +27,15 @@ public class FoodDAO {
 			
 			while(res.next()) {
 				try {
-					list.add(new Food(res.getInt("food_code"),
-							res.getString("display_name")
-							));
+			Food f=	new Food(res.getInt("food_code"),
+							res.getString("display_name"));
+                    list.add(f);
+                    
+					if(!idFoods.containsKey(res.getInt("food_code"))){
+						idFoods.put(res.getInt("food_code"),f);	
+					}	
+					
+					
 				} catch (Throwable t) {
 					t.printStackTrace();
 				}
@@ -76,7 +84,7 @@ public class FoodDAO {
 	}
 	
 	public List<Portion> listAllPortions(){
-		String sql = "SELECT * FROM portion" ;
+		String sql = "SELECT * FROM porzione" ;
 		try {
 			Connection conn = DBConnect.getConnection() ;
 
@@ -107,6 +115,78 @@ public class FoodDAO {
 			e.printStackTrace();
 			return null ;
 		}
-
 	}
+		
+		
+
+		public List<Food> getVertici(Map<Integer,Food> idFoods, int numeroPorzioni){
+			String sql = "SELECT food.food_code,COUNT(DISTINCT porzione.portion_id) AS porzioni " + 
+					     "FROM food,porzione " + 
+					     "WHERE porzione.food_code=food.food_code " + 
+					     "GROUP BY food.food_code " + 
+					     "HAVING porzioni>= ? "; 
+			try {
+				Connection conn = DBConnect.getConnection() ;
+
+				PreparedStatement st = conn.prepareStatement(sql) ;
+				st.setInt(1, numeroPorzioni);
+				List<Food> list = new ArrayList<>() ;
+				
+				ResultSet res = st.executeQuery() ;
+				
+				while(res.next()) {
+					try {
+					list.add(idFoods.get(res.getInt("food_code")));
+					
+					} catch (Throwable t) {
+						t.printStackTrace();
+					}
+				}
+				
+				conn.close();
+				return list ;
+
+			} catch (SQLException e) {
+				e.printStackTrace();
+				return null ;
+			}
+		}
+		
+		
+		
+		public List<Arco> getArchi(Map<Integer,Food> idFoods, int numeroPorzioni){
+			String sql = "SELECT p1.food_code AS cibo1,p2.food_code AS cibo2, AVG(p1.saturated_fats)-AVG(p2.saturated_fats) AS peso " + 
+					     "FROM porzione AS p1,porzione AS p2 " + 
+				         "WHERE p1.food_code> p2.food_code " + 
+					     "GROUP BY p1.food_code,p2.food_code " + 
+					     "HAVING AVG(p1.saturated_fats)-AVG(p2.saturated_fats)!=0" ;
+			try {
+				Connection conn = DBConnect.getConnection() ;
+
+				PreparedStatement st = conn.prepareStatement(sql) ;
+				List<Arco> list = new ArrayList<>() ;
+				
+				ResultSet res = st.executeQuery() ;
+				
+				while(res.next()) {
+					try {
+                 Food cibo1=idFoods.get(res.getInt("cibo1"));
+                 Food cibo2=idFoods.get(res.getInt("cibo2"));
+                 Double peso=res.getDouble("peso");
+	 Arco arco=new Arco(cibo1,cibo2,peso);
+	 list.add(arco);
+						
+					} catch (Throwable t) {
+						t.printStackTrace();
+					}
+				}
+				
+				conn.close();
+				return list ;
+
+			} catch (SQLException e) {
+				e.printStackTrace();
+				return null ;
+			}
+		}
 }
